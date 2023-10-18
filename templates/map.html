@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Directions Map</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
@@ -10,41 +11,45 @@
             height: 500px;
             width: 100%;
         }
-       
+
+        .distance-marker {
+            width: 24px;
+            height: 24px;
+        }
+
+        .plot-directions-marker {
+            width: 32px;
+            height: 32px;
+        }
     </style>
 </head>
+
 <body>
+    <form method="POST" action="/calculate_directions">
+        <h2 class="text-center">Multi Directions Route Finder</h2>
 
-<form method="POST" action="/calculate_directions">
-   <h2 class="text-center">Multi Directions Route Finder</h2>
+        <div class="container">
+            <div class="form-group">
+                <label for="address">Address:</label>
+                <input type="text" class="form-control" name="address" placeholder="Enter Your Location" id="source">
+                <br>
+                <button class="btn btn-primary" type="submit">Calculate Directions</button>
+            </div>
+        </div>
+    </form>
 
-    <div class="container">
-        <div class="form-group">
-            <label for="address">Address:</label>
-            <input type="text" class="form-control" name="address" placeholder="Enter Your Location" id="source">
-            <br>
-            <button class="btn btn-primary" type="submit">Calculate Directions</button>
-        </div>`
-    </div>
-</form>
+    <div id="map"></div>
 
-<div id="map"></div>
-
-{% for point in nearby_points %}
-<div id="distance{{ loop.index }}" class="distance-info"></div>
-{% endfor %}
 </body>
 
 <script>
-
-    let sourceAutocomplete
-    
+    let sourceAutocomplete;
     var map;
-    
+
     sourceAutocomplete = new google.maps.places.Autocomplete(
         document.getElementById("source")
-    )
-    
+    );
+
     function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
             center: { lat: {{ start_location.lat }}, lng: {{ start_location.lng }} },
@@ -60,8 +65,6 @@
             travelMode: google.maps.TravelMode.DRIVING
         };
 
-        var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-
         directionsService.route(request, function (response, status) {
             if (status == 'OK') {
                 var directionsDisplay = new google.maps.DirectionsRenderer({
@@ -69,44 +72,43 @@
                     directions: response,
                 });
 
-                var distanceMeters = response.routes[0].legs[0].distance.value;
-                var distanceMiles = (distanceMeters / 1609.34).toFixed(2); // Convert to miles
-
-                var contentString = 'Destination {{ loop.index }}: ' + distanceMiles + ' miles';
-
-                var infowindow = new google.maps.InfoWindow({
-                    content: contentString
-                });
-
-                var marker = new google.maps.Marker({
+                var distanceMarker = new google.maps.Marker({
                     position: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
                     map: map,
-                    label: labels[{{ loop.index0 }} % labels.length] // Custom label from the sequence
+                    icon: {
+                        url: 'https://www.pngitem.com/pimgs/m/4-42154_road-road-icon-png-transparent-png.png',
+                        scaledSize: new google.maps.Size(24, 24)
+                    }
                 });
 
-                marker.addListener('click', function () {
-                    infowindow.open(map, marker);
+                // Calculate the distance in miles
+                var distanceMeters = response.routes[0].legs[0].distance.value;
+                var distanceMiles = (distanceMeters / 1609.34).toFixed(2);
+
+                // Create an InfoWindow for the distance marker
+                var distanceInfoWindow = new google.maps.InfoWindow({
+                    content: 'Distance: ' + distanceMiles + ' miles'
                 });
 
-                // Update the distance element with the calculated distance
-                var distanceElement = document.getElementById('distance{{ loop.index }}');
-                distanceElement.innerHTML = contentString;
+                // Add a click event listener to open the InfoWindow when the marker is clicked
+                distanceMarker.addListener('click', function() {
+                    distanceInfoWindow.open(map, distanceMarker);
+                });
 
-                
+                var plotDirectionsMarker = new google.maps.Marker({
+                    position: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
+                    map: map,
+                    icon: {
+                        url: 'path-to-plot-directions-marker-icon.png',
+                        scaledSize: new google.maps.Size(32, 32)
+                    }
+                });
             }
-
-            
         });
-
-        
         {% endfor %}
-
-          
     }
 </script>
 
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEMeWgeUm5zc7D4mjUdh_gkdRdyYf_ZcU&callback=initMap"></script>
 
-
 </html>
-
