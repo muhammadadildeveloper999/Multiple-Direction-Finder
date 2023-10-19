@@ -1,114 +1,98 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Directions Map</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEMeWgeUm5zc7D4mjUdh_gkdRdyYf_ZcU&libraries=places"></script>
-
     <style>
         #map {
             height: 500px;
             width: 100%;
         }
-
-        .distance-marker {
-            width: 24px;
-            height: 24px;
-        }
-
-        .plot-directions-marker {
-            width: 32px;
-            height: 32px;
+        .custom-marker {
+            width: 30px; 
+            height: 32px; 
         }
     </style>
 </head>
-
 <body>
-    <form method="POST" action="/calculate_directions">
-        <h2 class="text-center">Multi Directions Route Finder</h2>
 
-        <div class="container">
-            <div class="form-group">
-                <label for="address">Address:</label>
-                <input type="text" class="form-control" name="address" placeholder="Enter Your Location" id="source">
-                <br>
-                <button class="btn btn-primary" type="submit">Calculate Directions</button>
-            </div>
+<form method="POST" action="/calculate_directions">
+   <h2 class="text-center">Multi Directions Route Finder</h2>
+
+    <div class="container">
+        <div class="form-group">
+            <label for="address">Address:</label>
+            <input type="text" name="address" class="form-control" id="address" placeholder="Enter Your Location" required>
+            <br>
+            <button class="btn btn-primary" type="submit">Calculate Directions</button>
         </div>
-    </form>
+    </div>
+</form>
 
-    <div id="map"></div>
+<div id="map"></div>
 
-</body>
+{% for point in nearby_points %}
+<div id="distance{{ loop.index }}" class="distance-info"></div>
+{% endfor %}
 
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEMeWgeUm5zc7D4mjUdh_gkdRdyYf_ZcU"></script>
 <script>
-    let sourceAutocomplete;
     var map;
 
-    sourceAutocomplete = new google.maps.places.Autocomplete(
-        document.getElementById("source")
-    );
+function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: {{ start_location.lat }}, lng: {{ start_location.lng }} },
+        zoom: 10
+    });
 
-    function initMap() {
-        map = new google.maps.Map(document.getElementById('map'), {
-            center: { lat: {{ start_location.lat }}, lng: {{ start_location.lng }} },
-            zoom: 8
-        });
+    var directionsService = new google.maps.DirectionsService();
 
-        var directionsService = new google.maps.DirectionsService();
+    {% for point in nearby_points %}
+    var request = {
+        origin: new google.maps.LatLng({{ start_location.lat }}, {{ start_location.lng }}),
+        destination: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
+        travelMode: google.maps.TravelMode.DRIVING
+    };
 
-        {% for point in nearby_points %}
-        var request = {
-            origin: new google.maps.LatLng({{ start_location.lat }}, {{ start_location.lng }}),
-            destination: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
-            travelMode: google.maps.TravelMode.DRIVING
-        };
+    directionsService.route(request, function (response, status) {
+        if (status == 'OK') {
+            var directionsDisplay = new google.maps.DirectionsRenderer({
+                map: map,
+                directions: response,
+                labels: ' '
+            });
 
-        directionsService.route(request, function (response, status) {
-            if (status == 'OK') {
-                var directionsDisplay = new google.maps.DirectionsRenderer({
-                    map: map,
-                    directions: response,
-                });
+            var distanceMeters = response.routes[0].legs[0].distance.value;
+            var distanceMiles = (distanceMeters / 1609.34).toFixed(2); // Convert to miles
 
-                var distanceMarker = new google.maps.Marker({
-                    position: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
-                    map: map,
-                    icon: {
-                        url: 'https://www.pngitem.com/pimgs/m/4-42154_road-road-icon-png-transparent-png.png',
-                        scaledSize: new google.maps.Size(24, 24)
-                    }
-                });
+            var contentString = 'Destination ' + {{ loop.index }} + ': ' + distanceMiles + ' miles';
 
-                // Calculate the distance in miles
-                var distanceMeters = response.routes[0].legs[0].distance.value;
-                var distanceMiles = (distanceMeters / 1609.34).toFixed(2);
+            var infowindow = new google.maps.InfoWindow({
+                content: contentString
+            });
 
-                // Create an InfoWindow for the distance marker
-                var distanceInfoWindow = new google.maps.InfoWindow({
-                    content: 'Distance: ' + distanceMiles + ' miles'
-                });
-
-                // Add a click event listener to open the InfoWindow when the marker is clicked
-                distanceMarker.addListener('click', function() {
-                    distanceInfoWindow.open(map, distanceMarker);
-                });
-
-                var plotDirectionsMarker = new google.maps.Marker({
-                    position: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
-                    map: map,
-                    icon: {
-                        url: 'path-to-plot-directions-marker-icon.png',
-                        scaledSize: new google.maps.Size(32, 32)
-                    }
-                });
+            var marker = new google.maps.Marker({
+            position: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
+            map: map,
+            icon: {
+            url: 'https://www.pngitem.com/pimgs/m/4-42154_road-road-icon-png-transparent-png.png', 
+            scaledSize: new google.maps.Size(30, 30)
             }
         });
-        {% endfor %}
-    }
+
+            marker.addListener('click', function () {
+                infowindow.open(map, marker);
+            });
+
+            var distanceElement = document.getElementById('distance{{ loop.index }}');
+            distanceElement.innerHTML = contentString;
+        }
+    });
+
+    {% endfor %}
+}
 </script>
 
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEMeWgeUm5zc7D4mjUdh_gkdRdyYf_ZcU&callback=initMap"></script>
-
+</body>
 </html>
