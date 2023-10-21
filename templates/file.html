@@ -12,14 +12,6 @@
             width: 30px;
             height: 32px;
         }
-        .distance-info{
-            font-size: large;
-            font-weight: 700;
-            text-align: center;
-            line-height: 30px;
-            color: orange;
-            text-shadow: 8px 10px 10px blue;
-        }
     </style>
 </head>
 <body>
@@ -74,7 +66,7 @@ function initMap() {
             var distanceMeters = response.routes[0].legs[0].distance.value;
             var distanceMiles = (distanceMeters / 1609.34).toFixed(2); // Convert to miles
 
-            var contentString = 'Destination-' + {{ loop.index }} + ':  ' + distanceMiles + ' miles';
+            var contentString = 'Destination ' + {{ loop.index }} + ': ' + distanceMiles + ' miles';
 
             var infowindow = new google.maps.InfoWindow({
                 content: contentString
