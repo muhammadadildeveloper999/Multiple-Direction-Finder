@@ -54,7 +54,7 @@
 function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: {{ start_location.lat }}, lng: {{ start_location.lng }} },
-        zoom: 10
+        zoom: 12
     });
 
     var directionsService = new google.maps.DirectionsService();
@@ -63,7 +63,8 @@ function initMap() {
     var request = {
         origin: new google.maps.LatLng({{ start_location.lat }}, {{ start_location.lng }}),
         destination: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
-        travelMode: google.maps.TravelMode.DRIVING
+        travelMode: google.maps.TravelMode.DRIVING,
+        region: 'us', 
     };
 
     directionsService.route(request, function (response, status) {
@@ -87,23 +88,27 @@ function initMap() {
             position: new google.maps.LatLng({{ point.lat }}, {{ point.lng }}),
             map: map,
             icon: {
-            url: 'etc',
-            scaledSize: new google.maps.Size(30, 30)
-        },
+                url: 'etc',
+                scaledSize: new google.maps.Size(30, 30)
+            },
             label: {
-            text: distanceMiles + ' mi',
-            color: 'blue',
-            fontSize: '12px',
-            fontWeight: 'bold'
-        }
+                text: distanceMiles + ' mi',
+                color: 'blue',
+                fontSize: '12px',
+                fontWeight: 'bold'
+            }
         });
 
-            marker.addListener('click', function () {
-                infowindow.open(map, marker);
-            });
+        marker.addListener('mouseover', function () {
+            infowindow.open(map, marker);
+        });
 
-            var distanceElement = document.getElementById('distance{{ loop.index }}');
-            distanceElement.innerHTML = contentString;
+        marker.addListener('mouseout', function () {
+            infowindow.close();
+        });
+
+        var distanceElement = document.getElementById('distance{{ loop.index }}');
+        distanceElement.innerHTML = contentString;
         }
     });
 
@@ -114,3 +119,4 @@ function initMap() {
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEMeWgeUm5zc7D4mjUdh_gkdRdyYf_ZcU&callback=initMap"></script>
 </body>
 </html>
+

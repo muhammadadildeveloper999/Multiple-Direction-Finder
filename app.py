@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 import googlemaps
 import random
+import math
 
 app = Flask(__name__)
 
@@ -28,11 +29,12 @@ def calculate_directions():
         nearby_points = []
 
         for _ in range(num_points):
-            random_distance = random.uniform(1, radius)  # Use the provided radius
+            # Calculate random points within the specified radius
+            random_distance = random.uniform(0, radius / 69)  # Assuming 1 degree is approximately 69 miles
             random_angle = random.uniform(0, 360)
             destination_location = {
-                "lat": user_latitude + (random_distance / 111.32) * (180 / 3.141592653589793),
-                "lng": user_longitude + (random_distance / 111.32) * (180 / 3.141592653589793) / (40008000 / 360)
+                "lat": user_latitude + (random_distance * math.cos(math.radians(random_angle))),
+                "lng": user_longitude + (random_distance * math.sin(math.radians(random_angle)))
             }
             nearby_points.append(destination_location)
 
@@ -47,6 +49,7 @@ def calculate_directions():
 
     else:
         return render_template('map.html', directions=None, start_location=None)
+
 
 
 def get_directions(origin, destination):
